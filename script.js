@@ -1,26 +1,31 @@
 function gameBoard() {
     const rows = 3;
     const columns = 3;
+    const cells = rows * columns;
     const board = [];
+    let turnCount = rows * columns;
 
-    for (let i = 0; i < rows; i++) {
-        board[i] = []
-        for (let j = 0; j < columns; j++) {
-            board[i].push(cell())
-        }
+    const getTurnCount = () => turnCount;
+
+    for (let i = 0; i < cells; i++) {
+        board.push(cell())
+
+        /* for (let j = 0; j < columns; j++) {
+        } */
     }
 
     // This method wil be used to give status of cell for DOM manipulation
     const getBoard = () => board;
 
     // Here we will check which player selected which cell and if that cell is available 
-    const markCell = (rowNo, columnNo, player) => {
-        const selectedCell = board[rowNo][columnNo];
+    const markCell = (rowNo, player) => {
+        const selectedCell = board[rowNo];
 
         console.log("Selected cell value: " + selectedCell.getValue() + ", Player: " + player);
 
         // If selected cell is not available it will stop the execution of the code 
         if (selectedCell.getValue() != 0) return;
+        turnCount--;
         // Otherwise, I have a valid cell, the last one in the filtered array
         game.switchPlayerTurn();
         selectedCell.addMark(player);
@@ -29,12 +34,19 @@ function gameBoard() {
     // This method will be used to print our board to the console.
     // It is helpful to see what the board looks like after each turn as we play,
     // but we won't need it after we build our UI
-    const printBoard = () => {
-        const boardWithCellValues = board.map((row) => row.map((cell) => cell.getValue()))
-        console.table(boardWithCellValues);
+    const getBoardValues = () => {
+        const boardWithCellValues = board.map((cell) => cell.getValue());
+        return boardWithCellValues
     };
 
-    return { getBoard, markCell, printBoard };
+
+    const printBoard = () => {
+
+        console.table(getBoardValues());
+
+    };
+
+    return { getBoard, markCell, printBoard, getBoardValues, getTurnCount };
 }
 
 /* The function to control status of each cell */
@@ -54,6 +66,69 @@ function cell() {
         getValue
     };
 }
+
+
+function checkWin(board) {
+    const boardArr = board.getBoardValues();
+    const rows = Math.sqrt(boardArr.length);
+    const turnCount = board.getTurnCount();
+    let loopCount = 0;
+
+    const arrCellsToStr = (arr) => arr.reduce((accumulator, currentValue) => accumulator + currentValue, "",);
+
+    for (let i = 0; i < rows; i++) {
+        let arrRows = [];
+        let arrColumns = [];
+        let arrRDiag = [];
+        let arrLDiag = [];
+
+        //Checks rows
+        for (let j = 0; j < rows; j++) {
+            arrRows.push(boardArr[loopCount]);
+            loopCount++;
+        }
+        const rowStr = arrCellsToStr(arrRows);
+
+        //Checks columns
+        for (let k = 0; k <= (rows * (rows - 1)) + i; k += rows) {
+            arrColumns.push(boardArr[i + k]);
+        }
+        const columnStr = arrCellsToStr(arrColumns);
+
+        // Check diagonal
+        let rDiagCell = 0;
+        let lDiagCell = 0;
+        for (let l = 0; l < rows && i <= 0; l++) {
+            //Check right(/) diagonal
+            rDiagCell += rows - 1
+            arrRDiag.push(boardArr[rDiagCell]);
+
+            //Check left(\) diagonal    
+            arrLDiag.push(boardArr[lDiagCell]);
+            lDiagCell += rows + 1
+        }
+        const rDiagStr = arrCellsToStr(arrRDiag);
+        const lDiagStr = arrCellsToStr(arrLDiag);
+
+        //Check who wins 
+        if (rowStr === "XXX" || columnStr === "XXX" || rDiagStr === "XXX" || lDiagStr === "XXX") {
+            console.log("X Wins")
+            break;
+        } else if (rowStr === "OOO" || columnStr === "OOO" || rDiagStr === "OOO" || lDiagStr === "OOO") {
+            console.log("O Wins")
+            break;
+        } else if (turnCount === 0) {
+            console.log("Draw")
+        }
+
+        arrRows = [];
+        arrColumns = [];
+        arrRDiag = [];
+        arrLDiag = [];
+    }
+
+}
+
 
 /* The function to control the game */
 function gameController(playerOneName = "Player One", playerTwoName = "Player Two") {
@@ -83,18 +158,16 @@ function gameController(playerOneName = "Player One", playerTwoName = "Player Tw
         console.log(`${getActivePlayer().name}'s turn.`)
     };
 
-    const playRound = (rowNo, columnNo) => {
-
-
+    const playRound = (rowNo) => {
         //Mark the cell
         console.log(
-            `Marking ${getActivePlayer().name}'s marker into cell ${rowNo}, ${columnNo}...`
+            `Marking ${getActivePlayer().name}'s marker into cell ${rowNo}...`
         )
-        board.markCell(rowNo, columnNo, getActivePlayer().marker);
+        board.markCell(rowNo, getActivePlayer().marker);
         /*  This is where we would check for a winner and handle that logic,
         such as a win message. */
-
-
+        checkWin(board);
+        // console.table(board.getBoardValues());
         // Switch player turn
         printNewRound();
     };
@@ -102,7 +175,7 @@ function gameController(playerOneName = "Player One", playerTwoName = "Player Tw
     // Initial play game message
     printNewRound();
 
-    return { playRound, switchPlayerTurn };
+    return { playRound, switchPlayerTurn, board };
 }
 
 
