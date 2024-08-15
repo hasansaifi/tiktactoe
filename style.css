@@ -1,0 +1,16 @@
+body {
+    background-color: rgb(7, 18, 42);
+}
+
+.mainContainer {
+    display: grid;
+    grid-template: none / 5fr 1fr;
+}
+
+.gameArea {
+    background-color: green;
+}
+
+.inputArea {
+    background-color: rgb(0, 255, 76);
+}

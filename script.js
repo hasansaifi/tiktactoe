@@ -20,9 +20,7 @@ function gameBoard() {
     // Here we will check which player selected which cell and if that cell is available 
     const markCell = (rowNo, player) => {
         const selectedCell = board[rowNo];
-
         console.log("Selected cell value: " + selectedCell.getValue() + ", Player: " + player);
-
         // If selected cell is not available it will stop the execution of the code 
         if (selectedCell.getValue() != 0) return;
         turnCount--;
@@ -38,7 +36,6 @@ function gameBoard() {
         const boardWithCellValues = board.map((cell) => cell.getValue());
         return boardWithCellValues
     };
-
 
     const printBoard = () => {
 
@@ -73,6 +70,7 @@ function checkWin(board) {
     const rows = Math.sqrt(boardArr.length);
     const turnCount = board.getTurnCount();
     let loopCount = 0;
+    let result = { status: "Ongoing" }; //Ongoing:Game still going on, Draw: Draw, X: player one wins, O: player two wins,
 
     const arrCellsToStr = (arr) => arr.reduce((accumulator, currentValue) => accumulator + currentValue, "",);
 
@@ -112,13 +110,13 @@ function checkWin(board) {
 
         //Check who wins 
         if (rowStr === "XXX" || columnStr === "XXX" || rDiagStr === "XXX" || lDiagStr === "XXX") {
-            console.log("X Wins")
+            result.status = "xWin";
             break;
         } else if (rowStr === "OOO" || columnStr === "OOO" || rDiagStr === "OOO" || lDiagStr === "OOO") {
-            console.log("O Wins")
+            result.status = "oWin";
             break;
         } else if (turnCount === 0) {
-            console.log("Draw")
+            result.status = "Draw";
         }
 
         arrRows = [];
@@ -127,8 +125,10 @@ function checkWin(board) {
         arrLDiag = [];
     }
 
-}
+    const getResult = () => result;
 
+    return { getResult };
+}
 
 /* The function to control the game */
 function gameController(playerOneName = "Player One", playerTwoName = "Player Two") {
@@ -166,7 +166,8 @@ function gameController(playerOneName = "Player One", playerTwoName = "Player Tw
         board.markCell(rowNo, getActivePlayer().marker);
         /*  This is where we would check for a winner and handle that logic,
         such as a win message. */
-        checkWin(board);
+        const winner = checkWin(board);
+        console.log(winner.getResult());
         // console.table(board.getBoardValues());
         // Switch player turn
         printNewRound();
@@ -175,9 +176,8 @@ function gameController(playerOneName = "Player One", playerTwoName = "Player Tw
     // Initial play game message
     printNewRound();
 
-    return { playRound, switchPlayerTurn, board };
+    return { playRound, switchPlayerTurn };
 }
-
 
 // Codes for testing
 const game = gameController();
