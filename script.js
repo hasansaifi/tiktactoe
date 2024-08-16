@@ -69,7 +69,7 @@ function checkWin(board) {
     const rows = Math.sqrt(boardArr.length);
     const turnCount = board.getTurnCount();
     let loopCount = 0;
-    let result = { status: "Ongoing" }; //Ongoing:Game still going on, Draw: Draw, X: player one wins, O: player two wins,
+    let result = "Ongoing"; //Ongoing:Game still going on, Draw: Draw, X: player one wins, O: player two wins,
 
     const arrCellsToStr = (arr) => arr.reduce((accumulator, currentValue) => accumulator + currentValue, "",);
 
@@ -109,13 +109,13 @@ function checkWin(board) {
 
         //Check who wins 
         if (rowStr === "XXX" || columnStr === "XXX" || rDiagStr === "XXX" || lDiagStr === "XXX") {
-            result.status = "xWin";
+            result = "xWin";
             break;
         } else if (rowStr === "OOO" || columnStr === "OOO" || rDiagStr === "OOO" || lDiagStr === "OOO") {
-            result.status = "oWin";
+            result = "oWin";
             break;
         } else if (turnCount === 0) {
-            result.status = "Draw";
+            result = "Draw";
         }
 
         arrRows = [];
@@ -130,6 +130,7 @@ function checkWin(board) {
 /* The function to control the game */
 function gameController(playerOneName = "X", playerTwoName = "O") {
     const board = gameBoard();
+    let status = "Ongoing";
     const players = [
         {
             name: playerOneName,
@@ -161,23 +162,22 @@ function gameController(playerOneName = "X", playerTwoName = "O") {
             `Marking ${getActivePlayer().name}'s marker into cell ${rowNo}...`
         )
         const markCell = board.markCell(rowNo, getActivePlayer().marker);
-        console.log(markCell);
         if (markCell != 0) { switchPlayerTurn(); }
         /*  This is where we would check for a winner and handle that logic,
         such as a win message. */
-        const status = checkWin(board);
-        const getStatus = () => status;
+        checkWin(board);
+        status = checkWin(board).getResult();
         // console.table(board.getBoardValues());
         // Switch player turn
         printNewRound();
-
-        return { getStatus }
     };
+
+    const getStatus = () => status;
 
     // Initial play game message
     printNewRound();
 
-    return { playRound, switchPlayerTurn, getActivePlayer, getBoard: board.getBoard };
+    return { playRound, switchPlayerTurn, getActivePlayer, getStatus, getBoard: board.getBoard };
 }
 
 function screenController() {
@@ -193,24 +193,41 @@ function screenController() {
         const board = game.getBoard();
         const activePlayer = game.getActivePlayer();
 
+        if (game.getStatus() === "Ongoing") {
+            turnText.textContent = `${activePlayer.name}'s turn...`
+            renderCells();
+        } else if (game.getStatus() === "xWin") {
+            turnText.textContent = `X win`
+            renderCells();
+        } else if (game.getStatus() === "oWin") {
+            turnText.textContent = `O win`
+            renderCells();
+        }
+
         // Display player's turn
-        turnText.textContent = `${activePlayer.name}'s turn...`
 
-        // Render board squares
-        board.forEach((cell, index) => {
+        function renderCells() {
+            // Render board squares
+            board.forEach((cell, index) => {
 
-            // Anything clickable should be a button!!
-            const cellButton = document.createElement("button");
-            cellButton.classList.add("cellButton");
-            // Create a data attribute to identify the column
-            // This makes it easier to pass into our `playRound` function 
-            cellButton.dataset.column = index
-            if (cell.getValue() != 0) {
-                cellButton.textContent = cell.getValue();
-            }
-            gridDiv.appendChild(cellButton);
+                // Anything clickable should be a button!!
+                const cellButton = document.createElement("button");
+                cellButton.classList.add("cellButton");
+                // Create a data attribute to identify the column
+                // This makes it easier to pass into our `playRound` function 
+                cellButton.dataset.column = index
+                if (cell.getValue() != 0) {
+                    cellButton.textContent = cell.getValue();
+                }
 
-        })
+                if (game.getStatus() != "Ongoing") {
+                    cellButton.disabled = true;
+                }
+                gridDiv.appendChild(cellButton);
+
+            })
+        }
+
     }
 
     // Add event listener for the board
@@ -218,10 +235,14 @@ function screenController() {
         const selectedColumn = e.target.dataset.column;
         // Make sure I've clicked a column and not the gaps in between
         if (!selectedColumn) return;
+        console.log(game.getStatus());
+
 
         game.playRound(selectedColumn);
         updateScreen();
     }
+
+
     gridDiv.addEventListener("click", clickHandlerBoard);
 
     // Initial render
