@@ -22,10 +22,9 @@ function gameBoard() {
         const selectedCell = board[rowNo];
         console.log("Selected cell value: " + selectedCell.getValue() + ", Player: " + player);
         // If selected cell is not available it will stop the execution of the code 
-        if (selectedCell.getValue() != 0) return;
+        if (selectedCell.getValue() != 0) return 0;
         turnCount--;
         // Otherwise, I have a valid cell, the last one in the filtered array
-        game.switchPlayerTurn();
         selectedCell.addMark(player);
     }
 
@@ -124,14 +123,12 @@ function checkWin(board) {
         arrRDiag = [];
         arrLDiag = [];
     }
-
     const getResult = () => result;
-
     return { getResult };
 }
 
 /* The function to control the game */
-function gameController(playerOneName = "Player One", playerTwoName = "Player Two") {
+function gameController(playerOneName = "X", playerTwoName = "O") {
     const board = gameBoard();
     const players = [
         {
@@ -163,21 +160,75 @@ function gameController(playerOneName = "Player One", playerTwoName = "Player Tw
         console.log(
             `Marking ${getActivePlayer().name}'s marker into cell ${rowNo}...`
         )
-        board.markCell(rowNo, getActivePlayer().marker);
+        const markCell = board.markCell(rowNo, getActivePlayer().marker);
+        console.log(markCell);
+        if (markCell != 0) { switchPlayerTurn(); }
         /*  This is where we would check for a winner and handle that logic,
         such as a win message. */
-        const winner = checkWin(board);
-        console.log(winner.getResult());
+        const status = checkWin(board);
+        const getStatus = () => status;
         // console.table(board.getBoardValues());
         // Switch player turn
         printNewRound();
+
+        return { getStatus }
     };
 
     // Initial play game message
     printNewRound();
 
-    return { playRound, switchPlayerTurn };
+    return { playRound, switchPlayerTurn, getActivePlayer, getBoard: board.getBoard };
 }
 
-// Codes for testing
-const game = gameController();
+function screenController() {
+    const game = gameController();
+    const gridDiv = document.querySelector(".gridDiv");
+    const turnText = document.querySelector(".turnText");
+
+    const updateScreen = () => {
+        // clear the board
+        gridDiv.textContent = "";
+
+        // get the newest version of the board and player turn
+        const board = game.getBoard();
+        const activePlayer = game.getActivePlayer();
+
+        // Display player's turn
+        turnText.textContent = `${activePlayer.name}'s turn...`
+
+        // Render board squares
+        board.forEach((cell, index) => {
+
+            // Anything clickable should be a button!!
+            const cellButton = document.createElement("button");
+            cellButton.classList.add("cellButton");
+            // Create a data attribute to identify the column
+            // This makes it easier to pass into our `playRound` function 
+            cellButton.dataset.column = index
+            if (cell.getValue() != 0) {
+                cellButton.textContent = cell.getValue();
+            }
+            gridDiv.appendChild(cellButton);
+
+        })
+    }
+
+    // Add event listener for the board
+    function clickHandlerBoard(e) {
+        const selectedColumn = e.target.dataset.column;
+        // Make sure I've clicked a column and not the gaps in between
+        if (!selectedColumn) return;
+
+        game.playRound(selectedColumn);
+        updateScreen();
+    }
+    gridDiv.addEventListener("click", clickHandlerBoard);
+
+    // Initial render
+    updateScreen();
+
+    // We don't need to return anything from this module because everything is encapsulated inside this screen controller.
+
+}
+
+screenController()
